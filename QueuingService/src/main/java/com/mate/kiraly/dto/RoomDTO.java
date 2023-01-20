@@ -1,5 +1,6 @@
 package com.mate.kiraly.dto;
 
+import com.mate.kiraly.model.TrackQueueItem;
 import lombok.Getter;
 import lombok.Setter;
 

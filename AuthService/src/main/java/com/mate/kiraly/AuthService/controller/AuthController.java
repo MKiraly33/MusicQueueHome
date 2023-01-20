@@ -1,9 +1,7 @@
 package com.mate.kiraly.AuthService.controller;
 
-import com.mate.kiraly.AuthService.dto.RegisterDTO;
-import com.mate.kiraly.AuthService.dto.RegisterResponseDTO;
-import com.mate.kiraly.AuthService.dto.TokenResponseDTO;
-import com.mate.kiraly.AuthService.dto.UserDetailsDTO;
+import com.mate.kiraly.AuthService.dto.*;
+import com.mate.kiraly.AuthService.model.LocalUser;
 import com.mate.kiraly.AuthService.repository.UserRepo;
 import com.mate.kiraly.AuthService.service.AuthService;
 import org.slf4j.Logger;
@@ -30,8 +28,8 @@ public class AuthController {
     }
 
     @PostMapping("/token")
-    public TokenResponseDTO token(Authentication auth){
-        return authService.generateToken(auth);
+    public TokenResponseDTO token(@RequestBody LocalUser user){
+        return authService.generateToken(user);
     }
     @PostMapping("/register")
     public RegisterResponseDTO register(@RequestBody RegisterDTO registerDTO){
@@ -41,8 +39,6 @@ public class AuthController {
     public UserDetailsDTO getUserDetails(@PathVariable Long userid){
         return authService.getUserDetails(userid);
     }
-    @GetMapping("/check")
-    public String check(Authentication auth){
-        return "Token valid, welcome " + auth.getName();
-    }
+    @GetMapping("/validate")
+    public TokenValidateDTO check(@RequestHeader("Auth-Token") String token){ return authService.validateToken(token); }
 }

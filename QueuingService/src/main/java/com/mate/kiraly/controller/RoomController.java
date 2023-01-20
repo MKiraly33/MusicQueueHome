@@ -26,17 +26,20 @@ public class RoomController {
     }
 
     @PostMapping("/join")
-    public Boolean joinRoom(@RequestBody RoomJoinDTO roomJoinDTO){
+    public ResultFieldDTO joinRoom(@RequestBody RoomJoinDTO roomJoinDTO){
         return roomService.joinRoom(roomJoinDTO.getRoomId(), roomJoinDTO.getUserId());
     }
 
     @PostMapping("/register")
-    public Boolean registerRoom(@RequestBody RoomRegisterDTO roomRegisterDTO){
+    public ResultFieldDTO registerRoom(@RequestBody RoomRegisterDTO roomRegisterDTO){
         return roomService.registerRoom(roomRegisterDTO.getRoomName(), roomRegisterDTO.getUserId());
     }
     @PostMapping("/addtrack")
-    public Boolean addTrack(@RequestBody AddTrackDTO addTrackDTO){
+    public ResultFieldDTO addTrack(@RequestBody AddTrackDTO addTrackDTO){
         return roomService.addTrack(addTrackDTO);
     }
+
+    @DeleteMapping("/consume/{roomId}")
+    public String consume(@PathVariable("roomId") Long roomId){ return roomService.consume(roomId);}
 
 }

@@ -4,11 +4,13 @@ import com.fasterxml.jackson.databind.util.JSONPObject;
 import com.mate.kiraly.dto.SpotyTokenResponse;
 import com.mate.kiraly.dto.SpotyTrackRequest;
 import com.mate.kiraly.model.Token;
+import com.mate.kiraly.model.Track;
 import com.mate.kiraly.repository.DataFetchingRepo;
 import lombok.RequiredArgsConstructor;
 import org.apache.tomcat.util.json.JSONParser;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
@@ -19,12 +21,20 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
-@RequiredArgsConstructor
 public class DataFetchingServiceImpl implements DataFetchingService{
 
     private final DataFetchingRepo dataFetchingRepo;
     private Token spotyToken = new Token(); //TODO
     private final RestTemplate restTemplate;
+    @Value("${spoty.clientID}")
+    private String spotyClientId;
+    @Value("${spoty.clientSecret}")
+    private String spotyClientSecret;
+
+    public DataFetchingServiceImpl(DataFetchingRepo dataFetchingRepo, RestTemplate restTemplate){
+        this.dataFetchingRepo = dataFetchingRepo;
+        this.restTemplate = restTemplate;
+    }
     public Token getToken(String clientId, String clientSecret){
         String url = "https://accounts.spotify.com/api/token";
 
@@ -60,9 +70,16 @@ public class DataFetchingServiceImpl implements DataFetchingService{
     }
 
     public String getTrackUrl(SpotyTrackRequest spotyTrackRequest) {
+
+        Optional<Track> optionalTrack = dataFetchingRepo.findByArtistAndName(spotyTrackRequest.getArtist(),
+                spotyTrackRequest.getName());
+
+        if(optionalTrack.isPresent()){
+            return optionalTrack.get().getSpotyLink();
+        }
+
         if(spotyToken.getToken() == null || spotyToken.getExpireAt().isBefore(LocalDateTime.now().minusSeconds(10))){
-            spotyToken = getToken("55e38135ccb940e4a0f578ae8bb4a1a1",
-                               "<spotyfy_private_key>");
+            spotyToken = getToken(spotyClientId, spotyClientSecret);
         }
         String url = "https://api.spotify.com/v1/search?type=track&limit=1&market=HU&offset=0&q=artist:{artist}+track:{name}";
 
@@ -77,8 +94,14 @@ public class DataFetchingServiceImpl implements DataFetchingService{
 
         if(response.getStatusCode() == HttpStatus.OK) {
             JSONObject jsonObject = new JSONObject(response.getBody());
-            return jsonObject.getJSONObject("tracks").getJSONArray("items").getJSONObject(0)
+            String href = jsonObject.getJSONObject("tracks").getJSONArray("items").getJSONObject(0)
                     .getJSONObject("external_urls").getString("spotify");
+            Track track = new Track();
+            track.setSpotyLink(href);
+            track.setArtist(spotyTrackRequest.getArtist());
+            track.setName(spotyTrackRequest.getName());
+            dataFetchingRepo.save(track);
+            return href;
         }
         return null;
     }
