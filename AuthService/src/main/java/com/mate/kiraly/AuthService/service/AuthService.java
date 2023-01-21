@@ -42,8 +42,9 @@ public class AuthService {
         }
 
         BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder();
-        String providedPassword = "{bcrypt}" + bCryptPasswordEncoder.encode(user.getPassword());
-        if(bCryptPasswordEncoder.matches(user.getPassword(), dbUser.getPassword())){
+        //String providedPassword = "{bcrypt}" + bCryptPasswordEncoder.encode(user.getPassword());
+        String providedPassword = bCryptPasswordEncoder.encode(user.getPassword());
+        if(!bCryptPasswordEncoder.matches(user.getPassword(), dbUser.getPassword())){
             return new TokenResponseDTO();
         }
 
@@ -74,7 +75,8 @@ public class AuthService {
         if (localUser == null) {
             LocalUser toRegister = new LocalUser();
             BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder();
-            toRegister.setPassword("{bcrypt}" + bCryptPasswordEncoder.encode(registerDTO.getPassword()));
+            //toRegister.setPassword("{bcrypt}" + bCryptPasswordEncoder.encode(registerDTO.getPassword()));
+            toRegister.setPassword(bCryptPasswordEncoder.encode(registerDTO.getPassword()));
             toRegister.setUsername(registerDTO.getUsername());
             userRepo.save(toRegister);
             registerResponseDTO.setResult("Successfully registered!");

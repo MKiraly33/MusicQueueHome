@@ -10,10 +10,11 @@ import java.util.List;
 public interface RoomService {
     List<RoomListDTO> getAllRooms();
     RoomDTO getRoomData(Long id);
-    ResultFieldDTO registerRoom(String name, Long masterUserId);
-    ResultFieldDTO joinRoom(Long roomId, Long userId);
+    ResultFieldDTO registerRoom(String name, Long masterUserId, String uid);
+    ResultFieldDTO joinRoom(Long roomId, String uid);
 
-    ResultFieldDTO addTrack(AddTrackDTO addTrackDTO);
+    ResultFieldDTO addTrack(AddTrackDTO addTrackDTO, String uid);
 
-    String consume(Long roomId);
+    String consume(Long roomId, String uid);
+    ResultFieldDTO leaveRoom(Long roomId, String uid);
 }

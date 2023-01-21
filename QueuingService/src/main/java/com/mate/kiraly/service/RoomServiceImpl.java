@@ -58,13 +58,7 @@ public class RoomServiceImpl implements RoomService{
             trackQueueItems.sort(new Comparator<TrackQueueItem>() {
                 @Override
                 public int compare(TrackQueueItem o1, TrackQueueItem o2) {
-                    if(o1.getPlaceInQueue() < o2.getPlaceInQueue()){
-                        return -1;
-                    }else if(o1.getPlaceInQueue() > o2.getPlaceInQueue()){
-                        return 1;
-                    }else{
-                        return 0;
-                    }
+                    return o1.getPlaceInQueue().compareTo(o2.getPlaceInQueue());
                 }
             });
             List<String> hrefs = new ArrayList<>();
@@ -76,45 +70,74 @@ public class RoomServiceImpl implements RoomService{
         return rDTO;
     }
 
-    public ResultFieldDTO registerRoom(String name, Long masterUserId){
+    public ResultFieldDTO registerRoom(String name, Long masterUserId, String uid){
+        Long userId = Long.parseLong(uid);
+        ResultFieldDTO resultFieldDTO = new ResultFieldDTO();
+        if(queuingRepo.getRoomCountUserAlreadyIn(userId) > 0){
+            resultFieldDTO.setResult("User already inside a room, can not create a new one");
+            return resultFieldDTO;
+        }
         Room r = new Room();
         r.setName(name);
         r.setMasterUserId(masterUserId);
         queuingRepo.save(r);
-        ResultFieldDTO resultFieldDTO = new ResultFieldDTO();
+
         resultFieldDTO.setResult("Room registration successful");
         return resultFieldDTO;
     }
 
-    public ResultFieldDTO joinRoom(Long roomId, Long userId){
+    public ResultFieldDTO joinRoom(Long roomId, String uid){
+        Long userId = Long.parseLong(uid);
         Optional<Room> room = queuingRepo.findById(roomId);
         ResultFieldDTO resultFieldDTO = new ResultFieldDTO();
         if(room.isPresent()){
             Room r = room.get();
-            if(!r.getUserIds().contains(userId)){
+            if(queuingRepo.getRoomCountUserAlreadyIn(userId) > 0){
+                resultFieldDTO.setResult("User already in a room, can not join another");
+            }else{
                 r.getUserIds().add(userId);
                 queuingRepo.save(r);
-                resultFieldDTO.setResult("Room joined successfully");
-                return resultFieldDTO;
+                resultFieldDTO.setResult("Joined room successfully");
             }
+            return resultFieldDTO;
         }
         resultFieldDTO.setResult("Room does not exist");
+        return resultFieldDTO;
+    }
+
+    public ResultFieldDTO leaveRoom(Long roomId, String uid){
+        Long userId = Long.parseLong(uid);
+        ResultFieldDTO resultFieldDTO = new ResultFieldDTO();
+        if(isUserInRoom(userId, roomId)){
+            Optional<Room> optionalRoom = queuingRepo.findById(roomId);
+            if(optionalRoom.isPresent()){
+                Room r = optionalRoom.get();
+                if(r.getUserIds().contains(userId)){ // If the leaving user is a user, delete from user list
+                    r.getUserIds().remove(userId);
+                    resultFieldDTO.setResult("Successfully removed user from room");
+                }else{ // Otherwise at this point the leaving user must be the room master, so delete the room
+                    queuingRepo.delete(r);
+                    resultFieldDTO.setResult("User was room master, successfully deleted room");
+                }
+            }
+        }else{
+            resultFieldDTO.setResult("User is not in the specified room");
+        }
         return resultFieldDTO;
     }
 
     public Boolean isUserInRoom(Long userId, Long roomId){
         RoomDTO roomDTO = getRoomData(roomId);
         if(roomDTO.getRoomId() != null){
-            if(roomDTO.getUserIds().contains(userId) || roomDTO.getMasterUserId().equals(userId)){
-                return true;
-            }
+            return roomDTO.getUserIds().contains(userId) || roomDTO.getMasterUserId().equals(userId);
         }
         return false;
     }
 
-    public ResultFieldDTO addTrack(AddTrackDTO addTrackDTO) {
+    public ResultFieldDTO addTrack(AddTrackDTO addTrackDTO, String uid) {
+        Long userId = Long.parseLong(uid);
         ResultFieldDTO resultFieldDTO = new ResultFieldDTO();
-        if(isUserInRoom(addTrackDTO.getUserId(), addTrackDTO.getRoomId())){
+        if(isUserInRoom(userId, addTrackDTO.getRoomId())){
             RoomDTO roomDTO = getRoomData(addTrackDTO.getRoomId());
             Room r = new Room();
             r.setRoomId(roomDTO.getRoomId());
@@ -143,8 +166,10 @@ public class RoomServiceImpl implements RoomService{
         return resultFieldDTO;
     }
 
-    public String consume(Long roomId){
-
+    public String consume(Long roomId, String uid){
+        if(!isUserInRoom(Long.parseLong(uid), roomId)){
+            return "Consuming user is not in the specified room";
+        }
         Long minQueuePos = trackQueueItemRepo.findMinPositionInQueueByRoomId(roomId);
         Optional<TrackQueueItem> optionalTrackQueueItem = trackQueueItemRepo.findByRoomIdAndPlaceInQueue(roomId, minQueuePos);
 

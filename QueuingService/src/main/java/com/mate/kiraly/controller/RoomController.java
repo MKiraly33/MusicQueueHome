@@ -26,20 +26,25 @@ public class RoomController {
     }
 
     @PostMapping("/join")
-    public ResultFieldDTO joinRoom(@RequestBody RoomJoinDTO roomJoinDTO){
-        return roomService.joinRoom(roomJoinDTO.getRoomId(), roomJoinDTO.getUserId());
+    public ResultFieldDTO joinRoom(@RequestBody RoomJoinDTO roomJoinDTO, @RequestHeader("auth-user-id") String uid){
+        return roomService.joinRoom(roomJoinDTO.getRoomId(), uid);
     }
 
     @PostMapping("/register")
-    public ResultFieldDTO registerRoom(@RequestBody RoomRegisterDTO roomRegisterDTO){
-        return roomService.registerRoom(roomRegisterDTO.getRoomName(), roomRegisterDTO.getUserId());
+    public ResultFieldDTO registerRoom(@RequestBody RoomRegisterDTO roomRegisterDTO, @RequestHeader("auth-user-id") String uid){
+        return roomService.registerRoom(roomRegisterDTO.getRoomName(), roomRegisterDTO.getUserId(), uid);
     }
     @PostMapping("/addtrack")
-    public ResultFieldDTO addTrack(@RequestBody AddTrackDTO addTrackDTO){
-        return roomService.addTrack(addTrackDTO);
+    public ResultFieldDTO addTrack(@RequestBody AddTrackDTO addTrackDTO, @RequestHeader("auth-user-id") String uid){
+        return roomService.addTrack(addTrackDTO, uid);
     }
 
     @DeleteMapping("/consume/{roomId}")
-    public String consume(@PathVariable("roomId") Long roomId){ return roomService.consume(roomId);}
+    public String consume(@PathVariable("roomId") Long roomId, @RequestHeader("auth-user-id") String uid){
+        return roomService.consume(roomId, uid);}
 
+    @PostMapping("/leave")
+    public ResultFieldDTO leaveRoom(@RequestBody RoomJoinDTO roomLeaveDTO, @RequestHeader("auth-user-id") String uid){
+        return roomService.leaveRoom(roomLeaveDTO.getRoomId(), uid);
+    }
 }
